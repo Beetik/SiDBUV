@@ -1,0 +1,904 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>PrinterInterfaceCLS</name>
+    </assembly>
+    <members>
+        <member name="T:Ttp.Meteor.PrinterInterfaceCLS">
+            <summary>
+            Interface to the Meteor Print Control Datapath
+            </summary>
+        </member>
+        <member name="P:Ttp.Meteor.PrinterInterfaceCLS.Logging">
+            <summary>Controls file logging of interface activity and errors</summary>
+            <seealso cref="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetLogMessage(System.String@)"/>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiOpenPrinter">
+            <summary>
+            Opens connection to the print engine
+            </summary>
+            <returns>Returns <c>RVAL_OK</c> if successful</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiIsProcessConnected">
+            <summary>
+            Find out if the current process has got the PrinterInterface connection open
+            </summary>
+            <returns>true if there has been a successful call to PiOpenPrinter (but no call to PiClosePrinter) in the current process</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiSendCommand(System.Int32[])">
+            <summary>
+            Sends command to the print engine. Commands are listed in the documentation.
+            </summary>
+            <param name="Command">Buffer containing the command to be sent</param>
+            <returns>Returns <c>RVAL_OK</c> if command was sent successfully</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiSendCommandEx(System.Int32[],Ttp.Meteor.CommandExParams)">
+            <summary>
+            Extended version of send command which allows commands to be targeted
+            at a head lane
+            </summary>
+            <returns>Returns <c>RVAL_OK</c> if command was sent successfully</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiSendRipImageCommandHelper(System.Int32[],System.String,System.String,System.Nullable{Ttp.Meteor.CommandExParams})">
+            <summary>
+            <para>Helper function for sending <see cref="F:Ttp.Meteor.CtrlCmdIds.PCMD_RIPIMAGE"/> which hides the string marshalling.</para>
+            <para>The PCMD_RIPIMAGE command buffer parameters should all be filled in aside from indexes 2-5, which are set by this function.</para>
+            </summary>
+            <param name="cmd"><see cref="F:Ttp.Meteor.CtrlCmdIds.PCMD_RIPIMAGE"/> command buffer; must be fully populated apart from the string pointers</param>
+            <param name="filePath">Full path to the file being RIPPed and printed</param>
+            <param name="ripConfigName">Name of the RIP config (in the RIP's SW\TestConfig directory); can be "" to use the default PrintEngine RIP mode</param>
+            <param name="cmdExParams">Should normally be null.  If set, PiSendComamndEx is used instead of PiSendCommand</param>
+            <returns>Result from the underlying PiSendCommand call</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetCommandSpaceDwords(System.UInt32)">
+            <summary>
+            <para>Query the size of the largest command, or set of commands, which can be sent to PiSendCommand(Ex) wtihout receiving an
+                  RVAL_FULL (or an RVAL_BADPARAM).</para>
+            <para>Depending on how quickly the PrintEngine is processing commands, more buffer space may already be available after the
+                  commands have been sent.</para>
+            <para>This allows an application to check that there is space for a sequence of commands it is about to send, which means it
+                  can avoid the need to check for RVAL_FULL for every command in the sequence.</para>
+            </summary>
+            <param name="lane">Zero for a standard configuration.  Lane index (1 or 2) for a system with two independent print lanes.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiSetSignal(System.Int32,System.Int32)">
+            <summary>
+            Sets the state of a defined signal (I/O, PSUs etc).
+            <br/><br/>
+            The signal ID parameter format is as follows:
+            <br/>
+            Byte 2 - Pcc Number (1 - n)
+            <br/>
+            Byte 1 - Head Number (1 - n, or 0 for the PCC I/O signals)
+            <br/>
+            Byte 0 - one of <c><see cref="T:Ttp.Meteor.SigTypes">SigTypes</see></c>
+            <br/>
+            The HDC I/O signals are bidirectional and default to inputs. To enable a
+            signal as an output the corresponding <c>SIG_OENx</c> signals must be set to 1.
+            The PCC I/O signals are dedicated inputs and outputs, so this doesn't apply.
+            </summary>
+            <seealso cref="T:Ttp.Meteor.SigTypes"/>
+            <param name="SignalId">The signal ID parameter
+            format is as follows:
+            <br/>
+            Byte 2 - Pcc Number (1 - n)
+            <br/>
+            Byte 1 - Head/HDC Number (1 - n, or 0 for the PCC I/O signals)
+            <br/>
+            Byte 0 - one of <c><see cref="T:Ttp.Meteor.SigTypes">SigTypes</see></c></param>
+            <param name="State">1 = True, 0 = False</param>
+            <returns><c>RVAL_OK</c> if successful</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiSetAndValidateSignal(System.Int32,System.Int32)">
+            <summary>
+            As <c><see cref="M:Ttp.Meteor.PrinterInterfaceCLS.PiSetSignal(System.Int32,System.Int32)">PiSetSignal</see></c> but waits for the
+            signal to be set / returns whether there was an error
+            (e.g. if the parameter is out of range)
+            </summary>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiSetParam(System.Int32,System.Int32)">
+            <summary>
+            Sets the state of one of the adjustment parameters for head position,
+            head voltage etc.
+            <br/><br/>
+            The Parameter ID format is as follows. Byte 3 is the most significant byte:
+            <br/>
+            Byte 3 - Anum (parameter specific)
+            <br/>
+            Byte 2 - Pcc Number (1 - n, or 0 for global parameter / all pccs)
+            <br/>
+            Byte 1 - Head Number (1 - n, or 0 for the PCC I/O signals / all heads)
+            <br/>
+            Byte 0 - one of <c><see cref="T:Ttp.Meteor.eCFGPARAM">eCFGPARAM</see></c>
+            <br/>
+            The parameters are adjustment values (offsets) from the default values which
+            are specified in the config file 
+            </summary>
+            <seealso cref="T:Ttp.Meteor.eCFGPARAM"/>
+            <param name="ParamId">The Parameter ID format is as follows. Byte 3 is the most significant byte:
+            <br/>
+            Byte 3 - Anum (parameter specific)
+            <br/>
+            Byte 2 - Pcc Number (1 - n, or 0 for global parameter / all pccs)
+            <br/>
+            Byte 1 - Head Number (1 - n, or 0 for the PCC I/O signals / all heads)
+            <br/>
+            Byte 0 - one of <c><see cref="T:Ttp.Meteor.eCFGPARAM">eCFGPARAM</see></c>
+            </param>
+            <param name="Value">Value</param>
+            <returns><c>RVAL_OK</c> if successful</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiSetAndValidateParam(System.Int32,System.Int32)">
+            <summary>
+            As <c><see cref="M:Ttp.Meteor.PrinterInterfaceCLS.PiSetParam(System.Int32,System.Int32)">PiSetParam</see></c> but waits for the
+            parameter to be set / returns whether there was an error
+            (e.g. if the parameter is out of range)
+            </summary>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiSetParamEx(System.Int32,Ttp.Meteor.eCFGPARAMEx,System.Int64)">
+            <summary>
+            Extended API to set and store parameters.  Always blocking (i.e. equivalent to PiSetAndValidateParam).
+            
+            PrintEngineAddress is a packed 32-bit value, consist of 4 bytes in the following format (MSB first): aa:bb:cc:dd
+            <para>Where "aa" is a PCC             number (1-255); 0 has a special meaning: "ALL"</para>
+            <para>Where "bb" is a HDC             number (1-255); 0 has a special meaning: "ALL"</para>
+            <para>Where "cc" is a PrintHead       number (1-255); 0 has a special meaning: "ALL"</para>
+            <para>Where "dd" is a JettingAssembly number (1-255); 0 has a special meaning: "ALL"</para>
+            Value is parameter specific
+            For fixed point parameters, the lower 32 bits are the value and the upper 32 bits (if set) are
+            the divisor.  e.g. to pass 0.1, use 0x0000000a00000001
+            If the 32 bit value is negative, it must *not* be sign extended into the upper 32 bits
+            e.g. to pass -1, use 0x00000000FFFFFFFF
+            </summary>
+            <param name="PrintEngineAddress">packed form of the Print Engine object we are addressing</param>
+            <param name="ParamId">parameter ID.</param>
+            <param name="Value">Parameter value, can be a packed fixed-point format </param>
+            <returns><c>RVAL_OK</c> if successful</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiSetParamEx(System.Int32,Ttp.Meteor.eCFGPARAMEx,System.Decimal)">
+            <summary>
+            Set the parameter's value using the parameter's default scaling 
+            </summary>
+            <param name="PrintEngineAddress">Address (see MakePEAddress)</param>
+            <param name="ParamId">ID of the parameter to set</param>
+            <param name="Value">Value to set.  Any precision finer than the parameter's default scaling value is lost.</param>
+            <returns><c>RVAL_OK</c> if successful</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetParamEx(System.Int32,Ttp.Meteor.eCFGPARAMEx,System.IntPtr)">
+            <summary>
+            Extended API to retrieve parameters. 
+            
+            PrintEngineAddress is a packed 32-bit value, consist of 4 bytes in the following format (MSB first): aa:bb:cc:dd
+            <para>Where "aa" is a PCC             number (1-255); 0 has a special meaning: "ALL"</para>
+            <para>Where "bb" is a HDC             number (1-255); 0 has a special meaning: "ALL"</para>
+            <para>Where "cc" is a PrintHead       number (1-255); 0 has a special meaning: "ALL"</para>
+            <para>Where "dd" is a JettingAssembly number (1-255); 0 has a special meaning: "ALL"</para>
+            Value is parameter specific
+            For fixed point parameters, the lower 32 bits are the value and the upper 32 bits (if set) are
+            the divisor.  e.g. to pass 0.1, use 0x0000000a00000001
+            If the 32 bit value is negative, it must *not* be sign extended into the upper 32 bits
+            e.g. to pass -1, use 0x00000000FFFFFFFF
+            </summary>
+            <param name="PrintEngineAddress">packed form of the Print Engine object we are addressing</param>
+            <param name="ParamId">parameter ID.</param>
+            <param name="Value">Parameter value, can be a packed fixed-point format </param>
+            <returns><c>RVAL_OK</c> if successful</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetParamEx(System.Int32,Ttp.Meteor.eCFGPARAMEx,System.UInt64@)">
+            <summary>
+            Get the parameter's value and scaling value. The scaling factor is in the top 32bits and
+            the lower 32-bits contain the unscaled value. Divide the unscaled value by the scaling factor to get the final value.
+            </summary>
+            <param name="PrintEngineAddress">Address (see MakePEAddress)</param>
+            <param name="ParamId">ID of the parameter to set</param>
+            <param name="Value">Value to get. </param>
+            <returns><c>RVAL_OK</c> if successful</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.MakePEAddress(System.Int32,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Format a print engine address for use with PiSetParamEx or PiGetParamEx
+            </summary>
+            <param name="pccNum">Pcc number, 0 for all (PiSetParamEx only)</param>
+            <param name="hdcNum">Hdc number, 0 for all (PiSetParamEx only)l</param>
+            <param name="headNum">Head index within the Hdc, 1 for Hdcs which drive just one head, 0 for all (PiSetParamEx only)</param>
+            <param name="jaNum">Index of the addressed parameter within the head if applicable, or 1; 0 for all (PiSetParamEx only)</param>
+            <returns></returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.MakePEParam(System.Decimal,System.Int32)">
+            <summary>
+            Assemble a fixed point value for use with PiSetParamEx
+            The value is multiplied up by the scaling factor and rounded to an integer
+            The resulting integer is set as the lowest 32 bits of the returned value
+            The scaling value is set as the upper 32 bits of the returned value
+            </summary>
+            <param name="value">Value to set</param>
+            <param name="scale">Scaling factor</param>
+            <returns>Scaled integer parameter with the scaling divisor in the upper 32 bits</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.MakePEParam(System.Decimal,Ttp.Meteor.eCFGPARAMEx)">
+            <summary>
+            Assemble a fixed point value for PiSetParamEx using the parameter's default scaling
+            </summary>
+            <param name="value">Value to set</param>
+            <param name="Param">Paramter ID</param>
+            <returns>Scaled integer parameter with the scaling divisor in the upper 32 bits</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.LookupParameterScaling(Ttp.Meteor.eCFGPARAMEx)">
+            <summary>
+            Look up the scaling used for the parameter
+            The value is a divisor applied to the lower 32 bits of the parameter value
+            The upper 32 bits of the parameter value are set with the divisor
+            </summary>
+            <param name="Param">Parameter ID</param>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiReloadParamEx(Ttp.Meteor.eCFGPARAMEx,System.UInt32)">
+            <summary>
+            Reload the parameter from the Meteor configuration file.  Can be used if the application is writing
+            to the configuration file directly
+            </summary>
+            <param name="ParamId">ID of the parameter to set</param>
+            <param name="Flags">Load flags; should be set to zero</param>
+            <returns><c>RVAL_OK</c> if successful</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiSetStringEx(System.UInt32,System.UInt32,System.String,System.UInt64)">
+            <summary>
+            Set a configuration string
+            </summary>
+            <param name="StrPoolId">String pool ID <see cref="T:Ttp.Meteor.eCfgStringPool"/></param>
+            <param name="StrIdx">String index within the string pool</param>
+            <param name="Str"></param>
+            <param name="Reserved">Reserved; should be zero</param>
+            <returns><c>RVAL_OK</c> if successful</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetStringEx(System.UInt32,System.UInt32,System.String@)">
+            <summary>
+            Get a configuration string
+            </summary>
+            <param name="StrPoolId">String pool ID <see cref="T:Ttp.Meteor.eCfgStringPool"/></param>
+            <param name="StrIdx">String index within the string pool</param>
+            <param name="Str"></param>
+            <returns><c>RVAL_OK</c> if successful</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetStringEx(Ttp.Meteor.eCfgStringPool,System.UInt32,System.String@)">
+            <summary>
+            Get a configuration string
+            </summary>
+            <param name="StrPoolId">String pool ID <see cref="T:Ttp.Meteor.eCfgStringPool"/></param>
+            <param name="StrIdx">String index within the string pool</param>
+            <param name="Str"></param>
+            <returns><c>RVAL_OK</c> if successful</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiSetHeadPower(System.Int32)">
+            <summary>
+            <para>Turns the head power on or off</para>
+            <para>Returns RVAL_OK if successful</para>
+            <para>A return value of RVAL_BUSY when attempting to enable head power indicates that some or all of the PCCs
+            listed in the Meteor configuration file are not connected or have not completed initialisation, or that
+            the printer interface is busy, or that Meteor is still in the process of changing the head power state
+            from a previous command</para>
+            </summary>
+            <param name="State">Zero = off, non-zero = on</param>
+            <returns><c>RVAL_OK</c> if successful</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiSetHome">
+            <summary>
+            Used with scanning printers when the carriage is at a home sensor.
+            Zeros the Absolute X-counters on all Master PCCs
+            </summary>
+            <returns><c>RVAL_OK</c> if successful</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiUpdateEncoderResolution">
+            <summary>
+            Used with scanning printers to re-initialises the head X counts 
+            on all PCCs to take account of a new printer resolution.
+            The printer carriage MUST be stationary while this method is 
+            being called.
+            </summary>
+            <returns><c>RVAL_OK</c> if successful</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiUpdateXoffsets">
+            <summary>
+            Writes all head x-offset values to the PCCs, allowing on-the-fly adjustment.
+            Prior to calling this method, the desired head x-offset values should be set
+            via PiSetParam.  The new offsets will take effect on the next product detect.
+            </summary>
+            <returns><c>RVAL_OK</c> if successful</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiReSendPCCConfiguration">
+            <summary>
+            Command to tell Meteor to Re-send PCC configuration to all the connected PCCs. Intended for use 
+             after a setting has been changed.
+            </summary>
+            <returns><c>RVAL_OK</c> if successful</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiStepperMotor(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Sends commands to the PDC-K stepper motor. This command may block for up to 15 seconds.
+            </summary>
+            <param name="pccnum"></param>
+            <param name="hnum"></param>
+            <param name="StepReg"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetPrnStatus">
+            <summary>
+            Native call signature for PiGetPrnStatus
+            </summary>
+            <returns>Pointer to unmanaged TAppStatus structure</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetPrnStatus(Ttp.Meteor.TAppStatus@)">
+            <summary>
+            Updates <c><see cref="T:Ttp.Meteor.TAppStatus">TAppStatus</see></c> printer status structure
+            </summary>
+            <param name="status"><c><see cref="T:Ttp.Meteor.TAppStatus">TAppStatus</see></c> to be updated</param>
+            <returns><c>RVAL_OK</c> if the status structure was successfully updated</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetEepromData(System.UInt32,System.UInt32)">
+            <summary>
+            native signature for PiGetEepromData call
+            </summary>
+            <param name="pccnum"></param>
+            <param name="hnum"></param>
+            <returns>A pointer to an unmanaged char array</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetEepromData(System.UInt32,System.UInt32,System.String@)">
+            <summary>
+            Retrieve the Eeprom data read back from the print head. data is returned in a JSON formatted string
+            </summary>
+            <param name="pccnum"></param>
+            <param name="hnum"></param>
+            <param name="JSONString"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetPccStatus(System.Int32)">
+            <summary>
+            Native call signature for PiGetPccStatus
+            </summary>
+            <returns>Pointer to unmanaged TAppPccStatus structure</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetPccStatus(System.Int32,Ttp.Meteor.TAppPccStatus@)">
+            <summary>
+            Update <c><see cref="T:Ttp.Meteor.TAppPccStatus">TAppPccStatus</see></c> structure for the specified PCC.
+            </summary>
+            <param name="pccnum">PCC Number (1 to n)</param>
+            <param name="PccStatus"><c><see cref="T:Ttp.Meteor.TAppPccStatus">TAppPccStatus</see></c> to be updated</param>
+            <returns><c>RVAL_OK</c> if the status structure was successfully updated</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetHeadStatus(System.Int32,System.Int32)">
+            <summary>
+            Native call signature for PiGetHeadStatus
+            </summary>
+            <returns>Pointer to unmanaged TAppHeadStatus structure</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetHeadStatus(System.Int32,System.Int32,Ttp.Meteor.TAppHeadStatus@)">
+            <summary>
+            Updates <c><see cref="T:Ttp.Meteor.TAppHeadStatus">TAppHeadStatus</see></c> structure for the specified print head. 
+            </summary>
+            <param name="pccnum">PCC Number (1 to n)</param>
+            <param name="hnum">Head Number (1 to 6)</param>
+            <param name="HeadStatus"><c><see cref="T:Ttp.Meteor.TAppHeadStatus">TAppHeadStatus</see></c> to be updated</param>
+            <returns><c>RVAL_OK</c> if the status structure was successfully updated</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetCurrentCfgDesc">
+            <summary>
+            Native call signature for PiGetCurrentCfgDesc
+            </summary>
+            <returns>Pointer to unmanaged TCurrentCfgDesc structure</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetCurrentCfgDesc(Ttp.Meteor.TCurrentCfgDesc@)">
+            <summary>
+            Returns <c><see cref="T:Ttp.Meteor.TCurrentCfgDesc">TCurrentCfgDesc</see></c> configuration description
+            </summary>
+            <param name="cfg"><c><see cref="T:Ttp.Meteor.TCurrentCfgDesc">TCurrentCfgDesc</see></c> to be updated</param>
+            <returns><c>RVAL_OK</c> if the status structure was successfully updated</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetQClassEeprom(System.Int32,System.Int32)">
+            <summary>
+            Native call signature for PiGetQClassEeprom
+            </summary>
+            <returns>Pointer to unmanaged TAppQClassEeprom structure</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetQClassEeprom(System.Int32,System.Int32,Ttp.Meteor.TAppQClassEeprom@)">
+            <summary>
+            Updates <c><see cref="T:Ttp.Meteor.TAppQClassEeprom">TAppQClassEeprom</see></c> structure for the specified head.
+            </summary>
+            <param name="pccnum">PCC Number (1 to n)</param>
+            <param name="hnum">Head Number (1 to 6)</param>
+            <param name="QClassEeprom"><c><see cref="T:Ttp.Meteor.TAppQClassEeprom">TAppQClassEeprom</see></c> to be updated</param>
+            <returns><c>RVAL_OK</c> if the status structure was successfully updated</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetSG1024Eeprom(System.Int32,System.Int32)">
+            <summary>
+            Native call signature for PiGetSG1024ClassEeprom
+            </summary>
+            <returns>Pointer to unmanaged TAppSG1024Eeprom structure</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetSG1024Eeprom(System.Int32,System.Int32,Ttp.Meteor.TAppSG1024Eeprom@)">
+            <summary>
+            Updates <c><see cref="T:Ttp.Meteor.TAppSG1024Eeprom">TAppSG1024Eeprom</see></c> structure for the specified head.
+            </summary>
+            <param name="pccnum">PCC Number (1 to n)</param>
+            <param name="hnum">Head Number (1 to 6)</param>
+            <param name="SG1024Eeprom"><c><see cref="T:Ttp.Meteor.TAppSG1024Eeprom">TAppSG1024Eeprom</see></c> to be updated</param>
+            <returns><c>RVAL_OK</c> if the status structure was successfully updated</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetRG4HDCEeprom(System.Int32,System.Int32)">
+            <summary>
+            Native call signature for PiGetRG4HDCEeprom
+            </summary>
+            <returns>Pointer to unmanaged TAppRG4HDCEeprom structure</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetRG4HDCEeprom(System.Int32,System.Int32,Ttp.Meteor.TAppRG4HDCEeprom@)">
+            <summary>
+            Updates <c><see cref="T:Ttp.Meteor.TAppRG4HDCEeprom">TAppRG4HDCEeprom</see></c> structure for the specified head.
+            </summary>
+            <param name="pccnum">PCC Number (1 to n)</param>
+            <param name="hnum">Head Number (1 to 6)</param>
+            <param name="RG4HDCEeprom"><c><see cref="T:Ttp.Meteor.TAppRG4HDCEeprom">TAppRG4HDCEeprom</see></c> to be updated</param>
+            <returns><c>RVAL_OK</c> if the status structure was successfully updated</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetRG5Eeprom(System.Int32,System.Int32)">
+            <summary>
+            Native call signature for PiGetRG5Eeprom
+            </summary>
+            <returns>Pointer to unmanaged TAppRG5Eeprom structure</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetRG5Eeprom(System.Int32,System.Int32,Ttp.Meteor.TAppRG5Eeprom@)">
+            <summary>
+            Updates <c><see cref="T:Ttp.Meteor.TAppRG4HDCEeprom">TAppRG5Eeprom</see></c> structure for the specified head.
+            </summary>
+            <param name="pccnum">PCC Number (1 to n)</param>
+            <param name="hnum">Head Number (1 to 6)</param>
+            <param name="RG5Eeprom"><c><see cref="T:Ttp.Meteor.TAppRG5Eeprom">TAppRG5Eeprom</see></c> to be updated</param>
+            <returns><c>RVAL_OK</c> if the status structure was successfully updated</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetCompactFlashStatus">
+            <summary>
+            Native call signature for PiGetCompactFlashStatus
+            </summary>
+            <returns>Pointer to unmanaged TCompactFlashStatus structure</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetCompactFlashStatus(Ttp.Meteor.TCompactFlashStatus@)">
+            <summary>
+            Updates the <c><see cref="T:Ttp.Meteor.TCompactFlashStatus">CompactFlashStatus</see></c> structure
+            </summary>
+            <param name="CompactFlashStatus"><c><see cref="T:Ttp.Meteor.TCompactFlashStatus">TCompactFlashStatus</see></c> to be updated</param>
+            <returns><c>RVAL_OK</c> if the status structure was successfully updated</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetContinuousPrintStatus">
+            <summary>
+            Native call signature for PiGetContinuousPrintStatus
+            </summary>
+            <returns>Pointer to unmanaged TContinuousPrintStatus structure</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetContinuousPrintStatus(Ttp.Meteor.TContinuousPrintStatus@)">
+            <summary>
+            Updates the <c><see cref="T:Ttp.Meteor.TContinuousPrintStatus">TContinuousPrintStatus</see></c> structure
+            </summary>
+            <param name="ContinuousPrintStatus"><c><see cref="T:Ttp.Meteor.TContinuousPrintStatus">ContinuousPrintStatus</see></c> to be updated</param>
+            <returns><c>RVAL_OK</c> if the status structure was successfully updated</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetLastStatusError">
+            <summary>
+            Returns the last error code from a status request from the calling thread (PiGetPrnStatus, PiGetPccStatus, PiGetHeadStatus etc.)
+            </summary>
+            <returns>
+             RVAL_OK if there was no error 
+             RVAL_BADSEQ if the PrinterInterface is not open 
+             RVAL_BUSY if the status request timed out - the application should retry later 
+             RVAL_NO_PRINTER if the PrintEngine is no longer available due to being cleanly closed 
+             RVAL_NOT_USED if there has never been a status request on the calling thread 
+            </returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiAbort">
+            <summary>
+            <para>Clears all print data buffers in the print engine (for both Preload and Fifo
+            data paths), effectively aborting the current job.</para>
+            <para>After a call to PiAbort the print engine becomes busy until the abort has fully completed.  
+            This can be tested using PiIsBusy.</para>
+            <para>After issuing an abort, an application should send no further print commands
+            until PiIsBusy returns false.</para>
+            </summary>
+            <returns><c>RVAL_OK</c> if successful</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiHaltPrintLane(System.Int32)">
+            <summary>
+            Halt the print lane. This is similar to PiAbort but can be used in a multi-lane 
+            system to abort a job on one print lane without affecting in-progress jobs 
+            on the other lanes.  Lanes are indexed from 1.        
+            </summary>
+            <param name="lane">The lane, indexed from 1.</param>
+            <returns>eRET.</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiClosePrinter">
+            <summary>
+            Disconnects from the print engine and deletes allocated memory.
+            <br/><br/>
+            Returns <c>RVAL_BUSY</c> if can't close because print data buffers
+            are still in use, or <c>RVAL_OK</c> if close succeeds.
+            The application should continually call this function until it
+            returns <c>RVAL_OK</c>, or should call <c>PiAbort</c> to clear the
+            buffers, followed by a call to <c>PiClosePrinter</c>
+            </summary>
+            <returns><c>RVAL_OK</c> if successful</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiClearPalette(System.UInt32,System.UInt32)">
+            <summary>
+            Clears current palette information for the given id.
+            </summary>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetLogMessage(System.String@)">
+            <summary>
+            Returns the next log message from the thread-safe message queue. The queue
+            contains useful debug information - the content will vary as the development
+            progresses.
+            This API is only for messages generated by the PrinterInterface.
+            Use PiGetPrintEngineLog for messages generated by the PrintEngine itself.
+            </summary>
+            <param name="logMessage"></param>
+            <returns><c>RVAL_OK</c> or <c>RVAL_EMPTY</c></returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiCanClosePrinter">
+            <summary>
+            Test in advance whether a call to PiClosePrinter will succeed
+            This function does not yield so should be called no more frequently than 
+            once every 100ms
+            </summary>
+            <returns><c>true</c> if busy</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiIsBusy">
+            <summary>
+            <para>Tests whether print engine is still processing the last control command</para>
+            <para>The print engine becomes busy after calls to the following interface methods:</para>
+            <para>PiAbort, PiSetSignal, PiSetParam, PiSetHeadPower, PiSetHome, PiSendMonitorCommand, PiSetWaveform</para>
+            <para>Note that the print engine does **not** become busy after a call to PiSendCommand.</para>
+            <para>All application status requests (PiGetPrnStatus, PiGetPccStatus, PiGetHeadStatus etc.) will return NULL while the printer interface is busy</para>
+            </summary>
+            <returns><c>true</c> if busy</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiSetWaveform(System.Int32,System.Int32,System.Int32,System.String,System.Int32)">
+            <summary>
+            Instructs print engine to set a new waveform file for one or more print heads.  The head's 
+            waveform is updated the next time that head power is enabled (for the KJ4 and CF1 heads) or the next 
+            time a print job starts (for other head types).
+            The waveform file is set as the waveform for slot Index and the selected PCC(s) / HDC(s) is set to use this index.
+            If the WaveformFile is "" (empty string) the waveform file at slot index is cleared and the selected PCC(s) / HDC(s)
+            is set to use either Meteor's in-built waveform for this index (CF1/Leopard) or the global default waveform (Dimatix/Ricoh/SPT/Hss).
+            Setting WaveformFile to "" has no effect for the KJ4 head.
+            </summary>
+            <param name="PccNum">PCC number or zero for all PCCs</param>
+            <param name="HeadNum">Head number or zero for all heads</param>
+            <param name="Index">Requested waveform index</param>
+            <param name="WaveformFile">Fully qualified path to waveform file</param>
+            <param name="Row">Row, Jetting Assembly or Colour index for HDCs which support more than one waveform.  0 selects waveform for all rows or jas.</param>
+            <returns><c>RVAL_OK</c> or appropriate error code</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiSetWaveformSG600Helper(System.Int32,System.Int32,System.Int32,System.String,System.Int32)">
+            <summary>
+            <para>Helper function which can be used instead of <see cref="M:Ttp.Meteor.PrinterInterfaceCLS.PiSetWaveform(System.Int32,System.Int32,System.Int32,System.String,System.Int32)"/> for the <see cref="F:Ttp.Meteor.eHEADTYPE.HT_SG600"/> head</para>
+            <para>The HDC-SG600 has 6 waveforms indexes, 3 for each half of the head, but the 3 indexes within each half must be identical</para>
+            <para>PiSetWaveformSG600Helper hides this by taking a "head half" index: 1 or 2 to select just one side of the head, or 0 for the entire head</para>
+            </summary>
+            <param name="PccNum">Pcc index (1-N)</param>
+            <param name="HeadNum">Hdc index (1-8)</param>
+            <param name="WfmIndex">Waveform file index which is used for the new file.  Set to -1 to let the PrintEngine choose an index itself.</param>
+            <param name="WaveformFile">Full path to the waveform file</param>
+            <param name="HeadHalfIndex">Which half of the head to use (1 or 2); zero for the entire head</param>
+            <returns></returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiSetWaveformFileIndexSG600Helper(System.Int32,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            <para>Helper function which can be used to set the waveform index for the <see cref="F:Ttp.Meteor.eHEADTYPE.HT_SG600"/> head</para>
+            <para>The HDC-SG600 has 6 waveforms indexes, 3 for each half of the head, but the 3 indexes within each half must be identical</para>
+            <para>PiSetWaveformFileIndexSG600Helper hides this by taking a "head half" index: 1 or 2 to select just one side of the head, or 0 for the entire head</para>
+            </summary>
+            <param name="PccNum">Pcc index (1-N)</param>
+            <param name="HdcNum">Hdc index (1-8)</param>
+            <param name="HeadHalfIndex">Which half of the head to use (1 or 2); zero for the entire head</param>
+            <param name="WfmIndex">Waveform file index (1-100) of the waveform listed in the configuration file</param>
+            <returns><c>RVAL_OK</c> or appropriate error code</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiSetUnitDelays(System.Int32,System.Int32,System.String,System.Int32)">
+            <summary>
+            Applicable only to the K1200 and K600 print heads. Instructs print engine to set a new Delay settings file for one or more print heads.  The head's 
+            delay file is updated the next time that head power is enabled.
+            </summary>
+            <param name="PccNum">PCC number (1 - n)</param>
+            <param name="HeadNum">Head number (1 - n)</param>
+            <param name="DelayFile">Fully qualified path to Delay settings file</param>
+            <param name="Unit">Print Head Unit the delay settings file will be loaded to. Must be 1 or 2.</param>
+            <returns><c>RVAL_OK</c> or appropriate error code</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetUnitDelays(System.Int32,System.Int32,System.String,System.Int32)">
+            <summary>
+            Applicable only to the K1200 and K600 print heads. Instructs the print engine to read and save the print head delay settings to a file. The data is read 
+            from the print head and saved when head power switch on next occurs.
+            </summary>
+            <param name="PccNum">PCC number (1 - n)</param>
+            <param name="HeadNum">Head number (1 - n)</param>
+            <param name="DelayFilePath">Path to save Delay settings file</param>
+            <param name="Unit">Print Head Unit the delay settings file will be copied from. Must be 1 or 2.</param>
+            <returns><c>RVAL_OK</c> or appropriate error code</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiDownloadWaveforms(System.Int32)">
+            <summary>
+            Forces a download of all waveforms to each head, currently only used for Vista heads.
+            </summary>
+            <param name="PccNum">PCC number</param>
+            <returns><c>RVAL_OK</c> or appropriate error code</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetDropTunerStatus(System.Int32,System.Int32)">
+            <summary>
+            Native call signature for PiGetDropTunerStatus
+            </summary>
+            <returns>Pointer to unmanaged DropTunerStatus structure</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetDropTunerStatus(System.Int32,System.Int32,Ttp.Meteor.TDropTunerStatus@)">
+            <summary>
+            Queries print engine for head status fields required by Drop Tuner
+            </summary>
+            <param name="PccNum">PCC number of Drop Tuner target</param>
+            <param name="HeadNum">Head number of Drop Tuner target</param>
+            <param name="status">Status structure to be filled in</param>
+            <returns><c>RVAL_OK</c> or appropriate error code</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetPlaneConfig">
+            <summary>
+            Native call signature for PiGetPlaneConfig
+            </summary>
+            <returns>Pointer to unmanaged MeteorPlaneConfig structure</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetPlaneConfig(Ttp.Meteor.MeteorPlaneConfig@)">
+            <summary>
+            Query print engine for plane configuration
+            </summary>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiWriteHeadMemory(System.Int32,System.Int32,System.Int32,System.Byte[])">
+            <summary>
+            Native call signature for PiWriteHeadMemory
+            </summary>
+            <returns>Pointer to unmanaged LexmarkStatus structure</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiWriteHeadMemory(System.Int32,System.Int32,System.Byte[])">
+            <summary>
+            Queries print engine for Lexmark head status
+            </summary>
+            <param name="PccNum">PCC number of Lexmark head</param>
+            <param name="HeadNum">Head number of Lexmark head</param>
+            <param name="memory">New memory content</param>
+            <returns><c>RVAL_OK</c> or appropriate error code</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiSendMonitorCommand(Ttp.Meteor.eMONITORCMD)">
+            <summary>
+            Sends a <see cref="T:Ttp.Meteor.eMONITORCMD">command</see> to the print engine user interface
+            </summary>
+            <param name="cmd"><see cref="T:Ttp.Meteor.eMONITORCMD">Command op-code</see></param>
+            <returns><c>RVAL_OK</c> or appropriate error code</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiStartPrintEngine(System.String)">
+            <summary>
+            Starts Meteor print engine hosted in the print app process (instead of using Monitor.exe)<br/><br/>
+            </summary>
+            <param name="configFile">Path to Meteor config file</param>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiStopPrintEngine(System.Int32)">
+            <summary>
+            Stops Meteor print engine hosted in the print app process
+            </summary>
+            <param name="force">non zero to stop a busy print engine</param>
+            <returns><c>RVAL_NO_PRINTER</c> if PrintEngine is not running. 
+            <c>RVAL_BADSEQ</c> if PrintEngine can't stop because it is in a job (if <c>dwForce</c> is true, then 
+            this will succeed). 
+            <c>RVAL_BUSY</c> if the command could not be processed, try again.
+            <c>RVAL_OK</c>, if the command succeeded.</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetPrintEngineLog(System.String@)">
+            <summary>
+            Returns the next log message from the PringEngine's thread-safe message queue.
+            The queue contains useful debug information - the content will vary as the development progresses.  
+            Requires [Test] LogToApp = 1 in the Meteor configuration file.
+            </summary>
+            <param name="logMessage"></param>
+            <returns><c>RVAL_OK</c> or <c>RVAL_EMPTY</c></returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetPrintEngineError(System.String@)">
+            <summary>
+            Returns next queued error message from print engine
+            </summary>
+            <param name="errorMessage"></param>
+            <returns><c>RVAL_OK</c> or <c>RVAL_EMPTY</c></returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetUartData(System.Int32,System.Int32,System.String@)">
+            <summary>
+            Returns any queued data from the printhead UART since the last call to this function.
+            Data is returned as an ASCII string, in hexadecimal format.
+            </summary>
+            <param name="PccNum"></param>
+            <param name="HeadNum"></param>
+            <param name="uartData"></param>
+            <returns><c>RVAL_OK</c> or <c>RVAL_EMPTY</c> or <c>RVAL_BADPARAM</c> if specified head not available</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetVersion">
+            <summary>
+            Returns the version number of the printer interface library.
+            The version is returned as (MAJOR VERSION * 100) + MINOR_VERSION.
+            The version number of the print engine can be found in TAppStatus.
+            </summary>
+            <returns>Version number</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetBuildNumber">
+            <summary>
+            Returns the build number of the printer interface library.
+            Every release of Meteor is tagged with a unique build number.
+            The build number of the print engine can be found in TAppStatus.
+            </summary>
+            <returns>Build number</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiSetPrintEngineLogPath(System.String)">
+            <summary>
+            Set the full path (including filename and extension) for the print engine log file
+            The folder for the log file must already exist on disk
+            Send "" to disable disk logging
+            Internally to Meteor the path is converted to ASCII
+            Returns RVAL_NOFILE if the file cannot be accessed
+            Returns RVAL_NOFILE if the folder does not exist
+            Returns RVAL_BADPARAM if the path is too long
+            </summary>
+            <param name="LogFilePath">Full path and filename</param>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiSetSimFileFolder(System.String)">
+            <summary>
+            Set the path to the folder where the PrintEngine will create SimPrint .bin files
+            The parent folder must already exist on disk
+            Send "" to disable SimPrint file creation
+            Internally to Meteor the path is converted to ASCII
+            Returns RVAL_NOFILE if the folder cannot be accessed or created
+            Returns RVAL_BADPARAM if the path is too long
+            </summary>
+            <param name="SimFileFolder">Path to the simprint folder</param>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiSendParametersFromConfig">
+            <summary>
+            If the config file contains a Parameters section, this function will 
+            send all of the parameters in the section and return RVAL_OK. If there
+            is no parameters section, or the section is empty, it will return RVAL_NOTUSED.
+            </summary>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiReloadConfigValues(System.UInt32)">
+            <summary>
+            Re-reads the config file from disk, and updates the Xoffsets and/or the Yoffsets from the [ControllerX] sections.
+            The new offsets take effect when the next print job is started.  Waveform filenames can also be re-loaded.
+            </summary>
+            <param name="Flags">
+            Set <see cref="F:Ttp.Meteor.MeteorConsts.BM_CFG_RELOAD_XOFFSETS"/> to reload all X offsets; 
+            Set <see cref="F:Ttp.Meteor.MeteorConsts.BM_CFG_RELOAD_YOFFSETS"/> to reload all Y offsets; 
+            Set <see cref="F:Ttp.Meteor.MeteorConsts.BM_CFG_RELOAD_WFMS"/> to reload all waveform file parameters
+            </param>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetHDCSerialNum(System.Int32,System.Int32)">
+            <summary>
+            Native call signature for PiGetHDCSerialNum
+            </summary>
+            <returns>Pointer to unmanaged PiGetHDCSerialNum structure</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetHDCSerialNum(System.Int32,System.Int32,Ttp.Meteor.SerialNumberStatus@)">
+            <summary>
+            Queries print engine for HDC serial number head status
+            </summary>
+            <param name="PccNum">PCC number of head</param>
+            <param name="HeadNum">Head number of head</param>
+            <param name="status">Status structure to be filled in</param>
+            <returns><c>RVAL_OK</c> or appropriate error code</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetPDCSerialNum(System.Int32)">
+            <summary>
+            Native call signature for PiGetPDCSerialNum
+            </summary>
+            <returns>Pointer to unmanaged PiGetPDCSerialNum structure</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetPDCSerialNum(System.Int32,Ttp.Meteor.SerialNumberStatus@)">
+            <summary>
+            Queries print engine for PDC serial number head status
+            </summary>
+            <param name="PccNum">PDC number</param>
+            <param name="status">Status structure to be filled in</param>
+            <returns><c>RVAL_OK</c> or appropriate error code</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiAllocateImageBuffer(System.UInt32)">
+            <summary>
+            Allocate an image buffer to allow large images to be sent directly.
+            Only available if the application is also hosting the Meteor Print Engine.
+            The application is responsible for freeing the buffer when it is no longer used, by setting
+            the top bit of the first command DWORD in PCMD_IMAGE_BUFFER.
+            </summary>
+            <param name="sizeDwords">Requested buffer size </param>
+            <returns>Buffer ID, or 0xFFFFFFFF (<see cref="F:Ttp.Meteor.MeteorConsts.IMG_BUF_UNSET"/> if memory allocation fails</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiFillImageBuffer(System.UInt32,System.UInt32,System.UInt32,System.UInt32[])">
+            <summary>
+            Fill the contents of an image buffer previously allocated using PiAllocateImageBuffer.
+            Only available if the application is also hosting the Meteor Print Engine.
+            The image can then be printed using the PCMD_IMAGE_BUFFER command.
+            The PCMD_IMAGE_BUFFER command is also used to free the buffer when it is no longer required.
+            The application is responsible for freeing image buffers.
+            </summary>
+            <param name="bufferID">Buffer ID</param>
+            <param name="offsetDWORDs">Start offset within the buffer</param>
+            <param name="sizeDWORDs">Number of DWORDs to copy</param>
+            <param name="imageData">Image data to copy</param>
+            <returns></returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiAllocateTiffImageBuffer(System.String,System.UInt32,Ttp.Meteor.TIFFImageDetails@,Ttp.Meteor.ImageLoadDetails@)">
+            <summary>
+            <para>Allocates a Print Engine image buffer and loads it with the TIFF file.  The buffer ID is returned in <see cref="F:Ttp.Meteor.TIFFImageDetails.ImageBufferID"/>.</para>
+            <para>A limited subset of TIFF file formats are supported by this mechanism.</para>
+            <para>If the load is successful the image can be printed using the <see cref="F:Ttp.Meteor.CtrlCmdIds.PCMD_IMAGE_BUFFER"/> command.</para>
+            <para>PCMD_IMAGE_BUFFER is also used to free the image buffer when it is no longer required.</para>
+            <para>The application is responsible for freeing image buffers.</para>
+            <para>TIFF image buffers can be automatically freed during a call to <see cref="M:Ttp.Meteor.PrinterInterfaceCLS.PiAbort"/> if the JobID set in <see cref="F:Ttp.Meteor.TIFFImageDetails.JobID"/> matches the JobID sent with the <see cref="F:Ttp.Meteor.CtrlCmdIds.PCMD_STARTJOB"/> command.</para>
+            <para>If <see cref="F:Ttp.Meteor.eRET.RVAL_MEM_LIMIT"/> is returned, the PrintEngine memory limit for TIFF buffers has been reached; this limit can be changed using the [Test] MaxTiffBufferMb configuration file entry</para>
+            </summary>
+            <param name="tiffPath">Full path to the TIFF file</param>
+            <param name="flags">Flags controlling how the file is loaded <see cref="T:Ttp.Meteor.bmTIFFLoadFlags"/></param>
+            <param name="bufferDetails">Returns the TIFF details, including the width in pixels, height in pixels, allocated buffer index and bits per pixel</param>
+            <param name="imgLoadDetails">Details of how to load the file into the buffer - e.g. allows cropping to be specified</param>
+            <returns>RVAL_OK if successful, otherwise an error code</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiAllocateMultichannelFileBuffers(System.String,Ttp.Meteor.MultichannelFileDetails@,System.UInt32,System.UInt32[],Ttp.Meteor.ImageLoadDetails@)">
+            <summary>
+            Allocate multiple images buffers and load them with print data from the file.
+            </summary>
+            <param name="FilePath">Absolute path to the file</param>
+            <param name="FileDetails">Describes how the print data is laid out in the file</param>
+            <param name="Planes">Bitmask selecting which planes to use.  BIT0 is plane 1 etc.</param>
+            <param name="BufferIndexes">Array filled in with the buffer indexes.  Must be 32 elements (MeteorConsts.MAX_MULTICHANNEL_FILE_BUFFERS).  Index 0 is the buffer for plane 1 etc.</param>
+            <param name="LoadDetails">Provides additional information about how to load the file (e.g. cropping co-ordinates)</param>
+            <returns>RVAL_OK if successful, otherwise an error code</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiRipFile(System.String,Ttp.Meteor.RipDetails@,Ttp.Meteor.ImageLoadDetails@)">
+            <summary>
+            
+            </summary>
+            <param name="filePath"></param>
+            <param name="ripDetails"></param>
+            <param name="loadDetails"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiRipPreview(System.String,Ttp.Meteor.RipPreviewDetails@)">
+            <summary>
+            
+            </summary>
+            <param name="filePath"></param>
+            <param name="previewDetails"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiCreateQrCode(System.String,Ttp.Meteor.QrCodeDetails@)">
+            <summary>
+            
+            </summary>
+            <param name="text"></param>
+            <param name="qrDetails"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiGetImageFileDetails(System.String,Ttp.Meteor.GenericImageFileDetails@)">
+            <summary>
+            Fill in the details (width, height etc.) of the image file, if it is a 
+            type which is recognised by the PrintEngine (.tif or .bmp currently).
+            This method should be used only when the calling application is also hosting the PrintEngine;
+            it is valid to call PiGetImageFileDetails before the call to PiStartPrintEngine
+            </summary>
+            <param name="filePath">Full path to the image file</param>
+            <param name="bufferDetails">Details of the file (image dimensions, DPI, pixel bit depth etc.)</param>
+            <returns>RVAL_OK on success</returns>
+        </member>
+        <member name="M:Ttp.Meteor.PrinterInterfaceCLS.PiEepromControl(System.Int32,Ttp.Meteor.TEepromCtrl@)">
+            <summary>
+            EEPROM control API. Experimental.
+            </summary>
+            <param name="PrintEngineAddress">Address (see MakePEAddress)</param>
+            <param name="CtlStruct">EEPROM control structure</param>
+            <returns>RVAL_OK on success</returns>
+        </member>
+    </members>
+</doc>
