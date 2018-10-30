@@ -29,15 +29,15 @@ namespace MeteorPrinter
 
         #region IMeterImageData
         public bool Load(string Path) {
-            try {
+            //try {
                 bitmap = new Bitmap(Path);
                 basename = Path.Substring(Path.LastIndexOf('\\') + 1);
                 return true;
-            }
-            catch (Exception e) {
-                //MessageBox.Show("Failed to open file " + Path + "\r\n\r\n" + e.Message, Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return false;
-            }
+            //}
+            //catch (Exception e) {
+            //    //MessageBox.Show("Failed to open file " + Path + "\r\n\r\n" + e.Message, Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            //    return false;
+            //}
         }
 
         public int[] GetBigImageCommand(int yTop, int trueBpp, int plane = 1, int xLeft = 1) {

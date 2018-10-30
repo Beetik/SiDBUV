@@ -56,7 +56,7 @@ namespace MeteorPrinter
     ///   polling in an asynchronous thread. ]
     ///   
     /// </summary>
-    class PrinterStatus
+    public class PrinterStatus
     {
         /// <summary>
         /// Number of pccs required for the system as defined in the Meteor .cfg file

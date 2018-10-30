@@ -5,7 +5,7 @@ using System.IO;
 using System.Reflection;
 using Ttp.Meteor;
 
-namespace MeteorInkjet
+namespace MeteorPrinter
 {
     /// <summary>
     /// Object which deals with locating the Meteor API components.
@@ -31,7 +31,7 @@ namespace MeteorInkjet
     /// For both of the above, the 32-bit path (API\x86) or the 64-bit path (API\amd64) 
     /// is selected depending on whether the current application is 32-bit or 64-bit.
     /// </summary>
-    class MeteorPath
+    public class MeteorPath
     {
         /// <summary>
         /// Attempt to locate the Meteor PrinterInterface.  If it cannot be loaded using the default 

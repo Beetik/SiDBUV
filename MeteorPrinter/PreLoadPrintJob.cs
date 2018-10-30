@@ -36,7 +36,7 @@ namespace MeteorPrinter
     /// 
     /// The only difference in the parameters is that PCMD_BIGIMAGE includes the image height.
     /// </summary>
-    class PreLoadPrintJob
+    public class PreLoadPrintJob
     {
         private int bpp;
         private IMeteorImageData image;

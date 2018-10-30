@@ -1,5 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using MeteorPrinter;
+using System;
 using System.Windows.Forms;
 
 namespace Ttp.Meteor.MeteorMonoPrint
@@ -14,7 +14,7 @@ namespace Ttp.Meteor.MeteorMonoPrint
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            if ( !MeteorInkjet.MeteorPath.LocatePrinterInterface() ) {
+            if ( !MeteorPath.LocatePrinterInterface() ) {
                 MessageBox.Show("Failed to locate the Meteor Printer Interface", Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }

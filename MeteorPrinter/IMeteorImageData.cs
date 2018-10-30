@@ -7,7 +7,7 @@ namespace MeteorPrinter
     /// Interface hiding the details of a file type when using the PreLoadPrintJob
     /// and related form object
     /// </summary>
-    interface IMeteorImageData : IDisposable
+    public interface IMeteorImageData : IDisposable
     {
         /// <summary>
         /// Load the image file

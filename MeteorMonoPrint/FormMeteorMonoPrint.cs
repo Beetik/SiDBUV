@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.Text;
-using System.Windows.Forms;
+﻿using MeteorPrinter;
+using System;
 using System.IO;
+using System.Windows.Forms;
 
 namespace Ttp.Meteor.MeteorMonoPrint
 {
@@ -68,7 +65,8 @@ namespace Ttp.Meteor.MeteorMonoPrint
         /// <summary>
         /// Constructor
         /// </summary>
-        public FormMeteorMonoPrint() {
+        public FormMeteorMonoPrint()
+        {
             InitializeComponent();
             LoadSettings();
         }
@@ -76,11 +74,13 @@ namespace Ttp.Meteor.MeteorMonoPrint
         /// <summary>
         /// Load the data for a new print image
         /// </summary>
-        private void LoadImage() {
+        private void LoadImage()
+        {
             // Attempt to avoid memory allocation problems with large images by
             // cleaning up the currently loading image.  For very large images
             // the 64 bit build of the application should be used.
-            if (image != null) {
+            if (image != null)
+            {
                 pictureBoxPrintData.Image = null;
                 image.Dispose();
                 image = null;
@@ -90,34 +90,41 @@ namespace Ttp.Meteor.MeteorMonoPrint
             // Load the new image
             Cursor.Current = Cursors.WaitCursor;
             string FileName = openFileDialogLoadImage.FileName;
-            image = ImageDataFactory.Create(FileName);
 
-            if (image != null) {
+            try
+            {
+                image = ImageDataFactory.Create(FileName);
                 pictureBoxPrintData.Image = image.GetPreviewBitmap();
                 Cursor.Current = Cursors.Default;
                 toolStripStatusFilename.Text = image.GetBaseName();
                 toolStripStatusFilename.ToolTipText = FileName;
                 toolStripStatusImageDimensions.Text = string.Format("{0} x {1} pixels", image.GetDocWidth(), image.GetDocHeight());
-            } else {
+            }
+            catch (Exception ex)
+            {
                 Cursor.Current = Cursors.Default;
                 MessageBox.Show("Failed to load image " + openFileDialogLoadImage.FileName,
-                                Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Exclamation);                
+                                Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                 openFileDialogLoadImage.FileName = "";
                 toolStripStatusFilename.Text = "No image loaded";
                 toolStripStatusFilename.ToolTipText = "";
                 toolStripStatusImageDimensions.Text = "";
             }
+
             EnableControls();
         }
 
         /// <summary>
         /// Start a new print job
         /// </summary>
-        private void StartPrintJob() {
-            if (image == null) {
+        private void StartPrintJob()
+        {
+            if (image == null)
+            {
                 return;
             }
-            if (!SetupPrinter()) {
+            if (!SetupPrinter())
+            {
                 MessageBox.Show("Failed to setup printer");
                 return;
             }
@@ -125,7 +132,8 @@ namespace Ttp.Meteor.MeteorMonoPrint
             // Move status to LOADING if Meteor has hardware connected - refresh the display 
             // immediately because sending the print data to Meteor in PreLoadPrintJob.Start
             // can take a significant amount of time for a large image
-            if (latestPrinterStatus == PRINTER_STATUS.IDLE) {
+            if (latestPrinterStatus == PRINTER_STATUS.IDLE)
+            {
                 textBoxStatus.Text = PRINTER_STATUS.LOADING.ToString();
                 bJobStarting = true;
                 textBoxStatus.Refresh();
@@ -133,7 +141,8 @@ namespace Ttp.Meteor.MeteorMonoPrint
             Cursor.Current = Cursors.WaitCursor;
             eRET rVal = test.Start();
             Cursor.Current = Cursors.Default;
-            if (rVal != eRET.RVAL_OK) {
+            if (rVal != eRET.RVAL_OK)
+            {
                 string Err = string.Format("Failed to start print job\n\n{0}", rVal);
                 MessageBox.Show(Err, Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 textBoxStatus.Text = latestPrinterStatus.ToString();
@@ -146,7 +155,8 @@ namespace Ttp.Meteor.MeteorMonoPrint
         /// whether we are currently connected to Meteor, and whether there
         /// is a print job starting or in progress.
         /// </summary>
-        private void EnableControls() {
+        private void EnableControls()
+        {
             bool JobInProgress = latestPrinterStatus == PRINTER_STATUS.READY ||
                                  latestPrinterStatus == PRINTER_STATUS.PRINTING ||
                                  bJobStarting;
@@ -175,16 +185,22 @@ namespace Ttp.Meteor.MeteorMonoPrint
         /// <param name="button">Radio button to enable/disable</param>
         /// <param name="firstEnabled">Set with button if this is the first enabled control</param>
         /// <returns>true if the currently set bpp value is now unavailable</returns>
-        private static bool RadioButtonCheck(Int32 enable, RadioButton button, ref RadioButton firstEnabled) {
+        private static bool RadioButtonCheck(Int32 enable, RadioButton button, ref RadioButton firstEnabled)
+        {
             bool retval = false;
-            if (enable != 0) {
+            if (enable != 0)
+            {
                 button.Enabled = true;
-                if (firstEnabled == null) {
+                if (firstEnabled == null)
+                {
                     firstEnabled = button;
                 }
-            } else {
+            }
+            else
+            {
                 button.Enabled = false;
-                if (button.Checked) {
+                if (button.Checked)
+                {
                     retval = true;
                 }
             }
@@ -196,16 +212,18 @@ namespace Ttp.Meteor.MeteorMonoPrint
         /// (1) enable/disable the appropriate 1,2 or 4bpp radio buttons and (2) make
         /// sure that the currently selected bpp value is valid.  
         /// </summary>
-        private void EnableBppRadioButtons() {
+        private void EnableBppRadioButtons()
+        {
             RadioButton firstEnabled = null;
             bool changeSelection = RadioButtonCheck(lastSupportedBppBitmask & 0x02, radioButton1bpp, ref firstEnabled);
             changeSelection |= RadioButtonCheck(lastSupportedBppBitmask & 0x04, radioButton2bpp, ref firstEnabled);
             changeSelection |= RadioButtonCheck(lastSupportedBppBitmask & 0x10, radioButton4bpp, ref firstEnabled);
-            if (changeSelection && firstEnabled != null) {
+            if (changeSelection && firstEnabled != null)
+            {
                 firstEnabled.Checked = true;
             }
         }
-        
+
         /// <summary>
         /// Set up the printer prior to starting a print job.
         ///
@@ -217,11 +235,14 @@ namespace Ttp.Meteor.MeteorMonoPrint
         ///
         /// </summary>
         /// <returns>Success / failure</returns>
-        private bool SetupPrinter() {
-            if (PrinterInterfaceCLS.PiSetAndValidateParam((int)eCFGPARAM.CCP_PRINT_CLOCK_HZ, UserPrintClock) != eRET.RVAL_OK) {
+        private bool SetupPrinter()
+        {
+            if (PrinterInterfaceCLS.PiSetAndValidateParam((int)eCFGPARAM.CCP_PRINT_CLOCK_HZ, UserPrintClock) != eRET.RVAL_OK)
+            {
                 return false;
             }
-            if (PrinterInterfaceCLS.PiSetAndValidateParam((int)eCFGPARAM.CCP_BITS_PER_PIXEL, UserBitsPerPixel) != eRET.RVAL_OK) {
+            if (PrinterInterfaceCLS.PiSetAndValidateParam((int)eCFGPARAM.CCP_BITS_PER_PIXEL, UserBitsPerPixel) != eRET.RVAL_OK)
+            {
                 return false;
             }
             return true;
@@ -230,7 +251,8 @@ namespace Ttp.Meteor.MeteorMonoPrint
         /// <summary>
         /// Abort any in-progress print job
         /// </summary>
-        private void AbortPrintJob() {
+        private void AbortPrintJob()
+        {
             // No longer starting a job
             bJobStarting = false;
             bJobAborting = true;
@@ -255,16 +277,20 @@ namespace Ttp.Meteor.MeteorMonoPrint
         /// not already open); (b) retrieve the status from Meteor; (c) update
         /// the temperature set points if required.
         /// </summary>
-        private void timerMeteorStatus_Tick(object sender, EventArgs e) {
-            if (inTimer) {
+        private void timerMeteorStatus_Tick(object sender, EventArgs e)
+        {
+            if (inTimer)
+            {
                 return;
             }
             inTimer = true;
-            try {
+            try
+            {
                 HandleMeteorStatus();
             }
             // If an exception is thrown above, display it to assist trouble shooting
-            catch (Exception Exc) {
+            catch (Exception Exc)
+            {
                 string Msg = "Exception thrown:\r\n\r\n" + Exc.ToString();
                 MessageBox.Show(Msg, Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Application.Exit();
@@ -275,62 +301,82 @@ namespace Ttp.Meteor.MeteorMonoPrint
         /// <summary>
         /// Called periodically to handle Meteor initialisation and status
         /// </summary>
-        private void HandleMeteorStatus() {
+        private void HandleMeteorStatus()
+        {
             // Get the Meteor status / open a connection to Meteor if one doesn't 
             // already exist
             PRINTER_STATUS Status = status.GetStatus();
-            if (Status == PRINTER_STATUS.READY || 
-                Status == PRINTER_STATUS.PRINTING || 
-                Status == PRINTER_STATUS.DISCONNECTED) {
+            if (Status == PRINTER_STATUS.READY ||
+                Status == PRINTER_STATUS.PRINTING ||
+                Status == PRINTER_STATUS.DISCONNECTED)
+            {
                 bJobStarting = false;
-            } else {
+            }
+            else
+            {
                 bJobAborting = false;
             }
             latestPrinterStatus = Status;
             // Update the head/aux temperature setpoints if the values in the inteface
             // have been changed
-            if (status.Connected) {
-                if (lastSetHeadTemperature != UserHeadTemperature) {
+            if (status.Connected)
+            {
+                if (lastSetHeadTemperature != UserHeadTemperature)
+                {
                     // Set target head temperature globally (PiSetParam with pcc = 0, head = 0)
-                    if (PrinterInterfaceCLS.PiSetParam((int)eCFGPARAM.CCP_HEAD_TEMP, UserHeadTemperature) == eRET.RVAL_OK) {
+                    if (PrinterInterfaceCLS.PiSetParam((int)eCFGPARAM.CCP_HEAD_TEMP, UserHeadTemperature) == eRET.RVAL_OK)
+                    {
                         lastSetHeadTemperature = UserHeadTemperature;
                     }
                 }
-                if (lastSetAuxTemperature != UserAuxTemperature) {
+                if (lastSetAuxTemperature != UserAuxTemperature)
+                {
                     // Set target auxiliary temperature globally (PiSetParam with pcc = 0, head = 0)
-                    if (PrinterInterfaceCLS.PiSetParam((int)eCFGPARAM.CCP_AUX_TEMP, UserAuxTemperature) == eRET.RVAL_OK) {  // Set globally
+                    if (PrinterInterfaceCLS.PiSetParam((int)eCFGPARAM.CCP_AUX_TEMP, UserAuxTemperature) == eRET.RVAL_OK)
+                    {  // Set globally
                         lastSetAuxTemperature = UserAuxTemperature;
                     }
                 }
-                if (lastSupportedBppBitmask != status.SupportedBppBitmask) {
+                if (lastSupportedBppBitmask != status.SupportedBppBitmask)
+                {
                     lastSupportedBppBitmask = status.SupportedBppBitmask;
                     EnableBppRadioButtons();
                 }
                 // Meteor will reject a PiSetHeadPower command if any of the PCCs are still in the process
                 // of changing the head power status
-                if (checkBoxEnableHeadPower.Enabled != status.HeadPowerIdle) {
+                if (checkBoxEnableHeadPower.Enabled != status.HeadPowerIdle)
+                {
                     checkBoxEnableHeadPower.Enabled = status.HeadPowerIdle;
                 }
                 // If the Meteor head power state is stable, check that we're displaying the correct state
-                if (status.HeadPowerIdle) {
-                    if (status.HeadPowerEnabled != checkBoxEnableHeadPower.Checked) {
+                if (status.HeadPowerIdle)
+                {
+                    if (status.HeadPowerEnabled != checkBoxEnableHeadPower.Checked)
+                    {
                         inSetHeadPower = true;
                         checkBoxEnableHeadPower.Checked = status.HeadPowerEnabled;
                         inSetHeadPower = false;
                     }
                 }
-            } else {
+            }
+            else
+            {
                 lastSetHeadTemperature = -1;
-                lastSetAuxTemperature  = -1;
+                lastSetAuxTemperature = -1;
             }
             // Update the enabled state of the controls to reflect the Meteor status
             EnableControls();
             // Update the status text
-            if ( bJobStarting ) {
+            if (bJobStarting)
+            {
                 textBoxStatus.Text = PRINTER_STATUS.LOADING.ToString();
-            } else if ( bJobAborting ) {
+            }
+            else if (bJobAborting)
+            {
                 textBoxStatus.Text = PRINTER_STATUS.ABORTING.ToString();
-            } else {
+            }
+            else
+            {
                 textBoxStatus.Text = Status.ToString();
             }
         }
@@ -338,8 +384,10 @@ namespace Ttp.Meteor.MeteorMonoPrint
 
         // -- Save and load of parameters set by the user --
         #region Settings
-        void SaveSettings() {
-            try {
+        void SaveSettings()
+        {
+            try
+            {
                 Properties.Settings.Default.YTop = (int)numericUpDownYTop.Value;
                 Properties.Settings.Default.PrintFrequency = numericUpDownFrequency.Value;
                 Properties.Settings.Default.Copies = numericUpDownCopies.Value;
@@ -353,13 +401,16 @@ namespace Ttp.Meteor.MeteorMonoPrint
                 Properties.Settings.Default.ExternalEncoder = UserExternalEncoder;
                 Properties.Settings.Default.Save();
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 MessageBox.Show("SaveSettings exception: \r\n" + e.Message);
             }
         }
 
-        void LoadSettings() {
-            try {
+        void LoadSettings()
+        {
+            try
+            {
                 numericUpDownYTop.Value = Properties.Settings.Default.YTop;
                 numericUpDownFrequency.Value = Properties.Settings.Default.PrintFrequency;
                 numericUpDownCopies.Value = Properties.Settings.Default.Copies;
@@ -371,14 +422,18 @@ namespace Ttp.Meteor.MeteorMonoPrint
                 checkBoxAuxTemperatureControl.Checked = Properties.Settings.Default.AuxTemperatureEnabled;
                 openFileDialogLoadImage.FileName = Properties.Settings.Default.ImageFileName;
                 UserExternalEncoder = Properties.Settings.Default.ExternalEncoder;
-                if (File.Exists(openFileDialogLoadImage.FileName)) {
+                if (File.Exists(openFileDialogLoadImage.FileName))
+                {
                     LoadImage();
-                } else {
+                }
+                else
+                {
                     openFileDialogLoadImage.FileName = "";
                 }
             }
-            catch (Exception) {// Ignore any load exception and fall back on default form values
-                               // (can happen if valid ranges in the up/down controls are changed)
+            catch (Exception)
+            {// Ignore any load exception and fall back on default form values
+             // (can happen if valid ranges in the up/down controls are changed)
             }
         }
         #endregion
@@ -390,55 +445,79 @@ namespace Ttp.Meteor.MeteorMonoPrint
         /// Zero means use external encoder.  
         /// A non zero value sets the master internal print clock frequency.
         /// </summary>
-        private int UserPrintClock {
-            get {
-                if (radioButtonExternalEncoder.Checked) {
+        private int UserPrintClock
+        {
+            get
+            {
+                if (radioButtonExternalEncoder.Checked)
+                {
                     return 0;
-                } else {
+                }
+                else
+                {
                     return (int)(numericUpDownFrequency.Value * 1000);
                 }
             }
         }
-        private bool UserExternalEncoder {
-            get {
+        private bool UserExternalEncoder
+        {
+            get
+            {
                 return radioButtonExternalEncoder.Checked;
             }
-            set {
+            set
+            {
                 radioButtonInternalEncoder.Checked = !value;
                 radioButtonExternalEncoder.Checked = value;
             }
         }
-        private int UserYTop {
-            get {
+        private int UserYTop
+        {
+            get
+            {
                 return (int)(numericUpDownYTop.Value);
             }
         }
-        private int UserCopies {
-            get {
+        private int UserCopies
+        {
+            get
+            {
                 return (int)numericUpDownCopies.Value;
             }
         }
-        private REPEAT_MODE UserRepeatMode {
-            get {
+        private REPEAT_MODE UserRepeatMode
+        {
+            get
+            {
                 return radioButtonSeamless.Checked ? REPEAT_MODE.SEAMLESS : REPEAT_MODE.DISCRETE;
             }
-            set {
+            set
+            {
                 radioButtonSeamless.Checked = (value == REPEAT_MODE.SEAMLESS);
                 radioButtonDiscrete.Checked = (value == REPEAT_MODE.DISCRETE);
             }
         }
-        private int UserBitsPerPixel {
-            get {
-                if (radioButton1bpp.Checked) {
+        private int UserBitsPerPixel
+        {
+            get
+            {
+                if (radioButton1bpp.Checked)
+                {
                     return 1;
-                } else if (radioButton2bpp.Checked) {
+                }
+                else if (radioButton2bpp.Checked)
+                {
                     return 2;
-                } else {
+                }
+                else
+                {
                     return 4;
                 }
             }
-            set {
-                switch (value) {
+            set
+            {
+                switch (value)
+                {
                     case 1:
                         radioButton1bpp.Checked = true;
                         radioButton2bpp.Checked = false;
@@ -457,13 +536,17 @@ namespace Ttp.Meteor.MeteorMonoPrint
                 }
             }
         }
-        private int UserHeadTemperature {
-            get {
+        private int UserHeadTemperature
+        {
+            get
+            {
                 return checkBoxHeadTemperatureControl.Checked ? (int)(numericUpDownHeadTemperatureSetPoint.Value * 10) : 0;
             }
         }
-        private int UserAuxTemperature {
-            get {
+        private int UserAuxTemperature
+        {
+            get
+            {
                 return checkBoxAuxTemperatureControl.Checked ? (int)(numericUpDownAuxTemperatureSetPoint.Value * 10) : 0;
             }
         }
@@ -471,49 +554,62 @@ namespace Ttp.Meteor.MeteorMonoPrint
 
         // -- Handlers for user control interaction --
         #region UserInteraction
-        private void buttonLoadImage_Click(object sender, EventArgs e) {
-            if (openFileDialogLoadImage.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+        private void buttonLoadImage_Click(object sender, EventArgs e)
+        {
+            if (openFileDialogLoadImage.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
                 LoadImage();
             }
         }
 
-        private void buttonStartPrint_Click(object sender, EventArgs e) {
+        private void buttonStartPrint_Click(object sender, EventArgs e)
+        {
             StartPrintJob();
         }
 
-        private void buttonStopPrint_Click(object sender, EventArgs e) {
+        private void buttonStopPrint_Click(object sender, EventArgs e)
+        {
             AbortPrintJob();
         }
 
-        private void FormMeteorMonoPrint_FormClosing(object sender, FormClosingEventArgs e) {
+        private void FormMeteorMonoPrint_FormClosing(object sender, FormClosingEventArgs e)
+        {
             SaveSettings();
             status.Disconnect();
             timerMeteorStatus.Enabled = false;
         }
 
-        private void checkBoxHeadTemperatureControl_CheckedChanged(object sender, EventArgs e) {
+        private void checkBoxHeadTemperatureControl_CheckedChanged(object sender, EventArgs e)
+        {
             numericUpDownHeadTemperatureSetPoint.Enabled = checkBoxHeadTemperatureControl.Checked;
         }
 
-        private void checkBoxAuxTemperatureControl_CheckedChanged(object sender, EventArgs e) {
+        private void checkBoxAuxTemperatureControl_CheckedChanged(object sender, EventArgs e)
+        {
             numericUpDownAuxTemperatureSetPoint.Enabled = checkBoxAuxTemperatureControl.Checked;
         }
 
-        private void checkBoxEnableHeadPower_CheckedChanged(object sender, EventArgs e) {
-            if (inSetHeadPower) {
+        private void checkBoxEnableHeadPower_CheckedChanged(object sender, EventArgs e)
+        {
+            if (inSetHeadPower)
+            {
                 return;
             }
             inSetHeadPower = true;
-            if (status.Connected) {
+            if (status.Connected)
+            {
                 eRET rVal = PrinterInterfaceCLS.PiSetHeadPower(checkBoxEnableHeadPower.Checked ? 1 : 0);
-                if (rVal != eRET.RVAL_OK) {
+                if (rVal != eRET.RVAL_OK)
+                {
                     MessageBox.Show("PiSetHeadPower failed with " + rVal.ToString() +
                                     "\n\nPlease check that all PCC cards are connected and have completed initialisation",
                                     Application.ProductName,
                                     MessageBoxButtons.OK,
                                     MessageBoxIcon.Asterisk);
                     checkBoxEnableHeadPower.Checked = false;
-                } else {
+                }
+                else
+                {
                     // Prevent further PiSetHeadPower commands being sent until the status reports HeadPowerIdle
                     checkBoxEnableHeadPower.Enabled = false;
                 }

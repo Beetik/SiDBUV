@@ -7,7 +7,7 @@ namespace MeteorPrinter
     /// from a file path.  The type of object to create is based on the file
     /// extension.
     /// </summary>
-    class ImageDataFactory
+    public class ImageDataFactory
     {
         public static IMeteorImageData Create(string FileName) {
             IMeteorImageData image = null;
