@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Drawing;
 
-namespace Ttp.Meteor.MeteorMonoPrint
+namespace MeteorPrinter
 {
     /// <summary>
     /// Interface hiding the details of a file type when using the PreLoadPrintJob

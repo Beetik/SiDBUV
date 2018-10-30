@@ -1,4 +1,6 @@
-﻿namespace Ttp.Meteor.MeteorMonoPrint
+﻿using Ttp.Meteor;
+
+namespace MeteorPrinter
 {
     public enum REPEAT_MODE 
     {

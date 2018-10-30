@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.28010.2048
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeteorMonoPrint", "MeteorMonoPrint\MeteorMonoPrint.csproj", "{EE0D50F6-10C9-435E-BF24-CC5B6BDB2498}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeteorPrinter", "MeteorPrinter\MeteorPrinter.csproj", "{15BDD0DC-E5BC-49AC-85A5-F54EE0C29884}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,18 @@ Global
 		{EE0D50F6-10C9-435E-BF24-CC5B6BDB2498}.Release|x64.Build.0 = Release|x64
 		{EE0D50F6-10C9-435E-BF24-CC5B6BDB2498}.Release|x86.ActiveCfg = Release|x86
 		{EE0D50F6-10C9-435E-BF24-CC5B6BDB2498}.Release|x86.Build.0 = Release|x86
+		{15BDD0DC-E5BC-49AC-85A5-F54EE0C29884}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{15BDD0DC-E5BC-49AC-85A5-F54EE0C29884}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{15BDD0DC-E5BC-49AC-85A5-F54EE0C29884}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{15BDD0DC-E5BC-49AC-85A5-F54EE0C29884}.Debug|x64.Build.0 = Debug|Any CPU
+		{15BDD0DC-E5BC-49AC-85A5-F54EE0C29884}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{15BDD0DC-E5BC-49AC-85A5-F54EE0C29884}.Debug|x86.Build.0 = Debug|Any CPU
+		{15BDD0DC-E5BC-49AC-85A5-F54EE0C29884}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{15BDD0DC-E5BC-49AC-85A5-F54EE0C29884}.Release|Any CPU.Build.0 = Release|Any CPU
+		{15BDD0DC-E5BC-49AC-85A5-F54EE0C29884}.Release|x64.ActiveCfg = Release|Any CPU
+		{15BDD0DC-E5BC-49AC-85A5-F54EE0C29884}.Release|x64.Build.0 = Release|Any CPU
+		{15BDD0DC-E5BC-49AC-85A5-F54EE0C29884}.Release|x86.ActiveCfg = Release|Any CPU
+		{15BDD0DC-E5BC-49AC-85A5-F54EE0C29884}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
