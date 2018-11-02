@@ -143,6 +143,7 @@ namespace MeteorPrinter
             // See if we can call into the Printer Interface.  This will drill down into the
             // underlying unmanaged PrinterInterface.dll.
             try {
+                
                 PrinterInterfaceCLS.PiGetBuildNumber();
             }
 

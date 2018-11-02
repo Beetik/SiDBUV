@@ -1,25 +1,8 @@
 ﻿using Ttp.Meteor;
+using MeteorPrinter.Enumerados;
 
 namespace MeteorPrinter
 {
-    public enum REPEAT_MODE 
-    {
-        /// <summary>
-        /// Multiple copies of the image will be joined with a zero pixel gap
-        /// 
-        /// One product detect signal will initiate the printing of all copies of
-        /// the image within the print job
-        /// </summary>
-        SEAMLESS = 0,
-        /// <summary>
-        /// Each copy of the image will require its own product detect signal
-        /// 
-        /// The minimum gap between product detects must leave sufficient margin
-        /// for the image plus head X-direction span
-        /// </summary>
-        DISCRETE = 1
-    }
-
     /// <summary>
     /// Sample class to start a pre-load print job comprising a number of repeats of a single
     /// image
@@ -42,7 +25,7 @@ namespace MeteorPrinter
         private IMeteorImageData image;
         private int ytop;
         private int copies;
-        private REPEAT_MODE repeatmode;
+        private RepeatMode repeatmode;
         private int jobid;
 
         /// <summary>
@@ -54,7 +37,7 @@ namespace MeteorPrinter
         /// <param name="Copies">Number of copies of the image to be printed</param>
         /// <param name="RepeatMode">Repeat images seamlessly (zero gap) or on demand (individual product detects)</param>
         /// <param name="JobID">Meteor job ID</param>
-        public PreLoadPrintJob(int Bpp, IMeteorImageData Image, int YTop, int Copies, REPEAT_MODE RepeatMode, int JobID) {
+        public PreLoadPrintJob(int Bpp, IMeteorImageData Image, int YTop, int Copies, RepeatMode RepeatMode, int JobID) {
             this.bpp        = Bpp;
             this.image      = Image;
             this.ytop       = YTop;
@@ -93,7 +76,7 @@ namespace MeteorPrinter
             int[] StartDocCmd = new int[] {
                 (int)CtrlCmdIds.PCMD_STARTPDOC, // Command ID
                 1,                              // DWORD parameter count
-                repeatmode == (REPEAT_MODE.DISCRETE) ? copies : 1 
+                repeatmode == (RepeatMode.DISCRETE) ? copies : 1 
             };
             if ((rVal = PrinterInterfaceCLS.PiSendCommand(StartDocCmd)) != eRET.RVAL_OK) {
                 return rVal;
@@ -101,7 +84,7 @@ namespace MeteorPrinter
             // For seamless image repeats using the prelod data path, PCMD_REPEAT
             // must be sent after PCMD_STARTPDOC and before the image data.
             //
-            if (copies > 1 && repeatmode == REPEAT_MODE.SEAMLESS) {
+            if (copies > 1 && repeatmode == RepeatMode.SEAMLESS) {
                 int[] RepeatCmd = new int[] {
                     (int)CtrlCmdIds.PCMD_REPEAT,    // Command ID
                     1,                              // DWORD parameter cound

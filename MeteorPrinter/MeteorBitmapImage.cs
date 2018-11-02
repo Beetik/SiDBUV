@@ -28,10 +28,10 @@ namespace MeteorPrinter
         }
 
         #region IMeterImageData
-        public bool Load(string Path) {
+        public bool Load(string imagePath) {
             //try {
-                bitmap = new Bitmap(Path);
-                basename = Path.Substring(Path.LastIndexOf('\\') + 1);
+                bitmap = new Bitmap(imagePath);
+                basename = imagePath.Substring(imagePath.LastIndexOf('\\') + 1);
                 return true;
             //}
             //catch (Exception e) {
@@ -203,7 +203,8 @@ namespace MeteorPrinter
         #region IDisposable
         public void Dispose()
         {
-            if (bitmap != null) { bitmap.Dispose(); }
+            //if (bitmap != null) { bitmap.Dispose(); }
+            bitmap?.Dispose();
         }
         #endregion
     }

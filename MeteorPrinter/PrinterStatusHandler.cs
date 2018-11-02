@@ -1,52 +1,10 @@
 ﻿using System;
 using System.Threading;
 using Ttp.Meteor;
+using MeteorPrinter.Enumerados;
 
 namespace MeteorPrinter
 {
-    public enum PRINTER_STATUS
-    {
-        /// <summary>
-        /// Meteor is not connected.  This will happen if the Meteor PrintEngine has not
-        /// yet been started (e.g. Monitor.exe needs to be run), or if another application
-        /// is currently connected to Meteor.
-        /// </summary>
-        DISCONNECTED,
-        /// <summary>
-        /// Meteor is connected and waiting for hardware
-        /// </summary>
-        WAITING_FOR_PCC,
-        /// <summary>
-        /// Meteor is initialising the PCC hardware
-        /// </summary>
-        INITIALISING,
-        /// <summary>
-        /// Meteor is inactive
-        /// </summary>
-        IDLE,
-        /// <summary>
-        /// The print data for the next print job is being loaded into the hardware buffers
-        /// </summary>
-        LOADING,
-        /// <summary>
-        /// The current print job is aborting
-        /// </summary>
-        ABORTING,
-        /// <summary>
-        /// The print data for the next print job is loaded and Meteor is waiting for an external
-        /// product detect signal to start printing
-        /// </summary>
-        READY,
-        /// <summary>
-        /// Meteor is printing
-        /// </summary>
-        PRINTING,
-        /// <summary>
-        /// Meteor is in an error condition
-        /// </summary>
-        ERROR
-    }
-
     /// <summary>
     /// Object to deal with connecting to Meteor and returning the current Meteor
     /// status.  For simplicity this object is designed to be called periodically 
@@ -56,7 +14,7 @@ namespace MeteorPrinter
     ///   polling in an asynchronous thread. ]
     ///   
     /// </summary>
-    public class PrinterStatus
+    public class PrinterStatusHandler
     {
         /// <summary>
         /// Number of pccs required for the system as defined in the Meteor .cfg file
@@ -112,13 +70,13 @@ namespace MeteorPrinter
         /// 2 seconds if the application is not currently connected.
         /// </summary>
         /// <returns></returns>
-        public PRINTER_STATUS GetStatus() {
+        public PrinterStatus GetStatus() {
             TAppStatus AppStatus;
             eRET rVal;
 
             if (!Connected) {
                 if (Environment.TickCount < tickLastConnectAttempt + CONNECT_INTERVAL_MS) {
-                    return PRINTER_STATUS.DISCONNECTED;
+                    return PrinterStatus.DISCONNECTED;
                 }
                 tickLastConnectAttempt = Environment.TickCount;
                 
@@ -134,7 +92,7 @@ namespace MeteorPrinter
                 // print application.
                 //
                 if (rVal != eRET.RVAL_OK && rVal != eRET.RVAL_EXISTS) {
-                    return PRINTER_STATUS.DISCONNECTED;
+                    return PrinterStatus.DISCONNECTED;
                 }
                 Connected = true;
                 // Send an abort command in case the application which previously used
@@ -163,7 +121,7 @@ namespace MeteorPrinter
                     PrinterInterfaceCLS.PiClosePrinter();
                     Connected = false;
                 }
-                return PRINTER_STATUS.DISCONNECTED;
+                return PrinterStatus.DISCONNECTED;
             }
 
             // Store the bitmask indicating which bits-per-pixel are valid for the current head type
@@ -177,7 +135,7 @@ namespace MeteorPrinter
             //
             PccsRequired = AppStatus.PccsRequired;
             if (PccsRequired != AppStatus.PccsAttached) {
-                return PRINTER_STATUS.WAITING_FOR_PCC;
+                return PrinterStatus.WAITING_FOR_PCC;
             }
             // Protect against the application acting on a brief status transition to IDLE
             ePRINTERSTATE PrinterState = AppStatus.PrinterState;
@@ -199,38 +157,38 @@ namespace MeteorPrinter
             switch (PrinterState) {
                 // There is no hardware connected.
                 case ePRINTERSTATE.MPS_DISCONNECTED:
-                    return PRINTER_STATUS.WAITING_FOR_PCC;
+                    return PrinterStatus.WAITING_FOR_PCC;
                 // The PCC hardware has connected to the Print Engine but has not yet been
                 // initialised
                 case ePRINTERSTATE.MPS_CONNECTED:
-                    return PRINTER_STATUS.INITIALISING;
+                    return PrinterStatus.INITIALISING;
                 // The Print Engine is initialised and waiting for a print job to start
                 case ePRINTERSTATE.MPS_IDLE:
-                    return PRINTER_STATUS.IDLE;
+                    return PrinterStatus.IDLE;
                 // The next print job is ready to start
                 case ePRINTERSTATE.MPS_READY:
-                    return PRINTER_STATUS.READY;
+                    return PrinterStatus.READY;
                 // Meteor is actively printing
                 case ePRINTERSTATE.MPS_PRINTING:
-                    return PRINTER_STATUS.PRINTING;
+                    return PrinterStatus.PRINTING;
                 // The Print Engine is downloading FPGA code to the PCCs    
                 case ePRINTERSTATE.MPS_INITIALIZING:
-                    return PRINTER_STATUS.INITIALISING;
+                    return PrinterStatus.INITIALISING;
                 // The PCC FPGA has completed programming and is starting up
                 case ePRINTERSTATE.MPS_STARTUP:
-                    return PRINTER_STATUS.INITIALISING;
+                    return PrinterStatus.INITIALISING;
                 // Fault condition - more information can be found by looking at the
                 // values in the status registers.  For the purposes of this application
                 // we just report the generic error; the register values can be viewed
                 // in Monitor
                 case ePRINTERSTATE.MPS_FAULT:
-                    return PRINTER_STATUS.ERROR;
+                    return PrinterStatus.ERROR;
                 // Image data is being loaded
                 case ePRINTERSTATE.MPS_LOADING:
-                    return PRINTER_STATUS.LOADING;
+                    return PrinterStatus.LOADING;
                 // Should never get here
                 default:
-                    return PRINTER_STATUS.ERROR;
+                    return PrinterStatus.ERROR;
             }
         }
 

@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using System.Windows.Forms;
+using MeteorPrinter.Enumerados;
 
 namespace Ttp.Meteor.MeteorMonoPrint
 {
@@ -10,11 +11,11 @@ namespace Ttp.Meteor.MeteorMonoPrint
         /// <summary>
         /// Object handles Meteor connection and status
         /// </summary>
-        private PrinterStatus status = new PrinterStatus();
+        private PrinterStatusHandler status = new PrinterStatusHandler();
         /// <summary>
         /// Last known printer status
         /// </summary>
-        private PRINTER_STATUS latestPrinterStatus = PRINTER_STATUS.DISCONNECTED;
+        private PrinterStatus latestPrinterStatus = PrinterStatus.DISCONNECTED;
         /// <summary>
         /// Currently loaded print image
         /// </summary>
@@ -128,25 +129,29 @@ namespace Ttp.Meteor.MeteorMonoPrint
                 MessageBox.Show("Failed to setup printer");
                 return;
             }
+
             PreLoadPrintJob test = new PreLoadPrintJob(UserBitsPerPixel, image, UserYTop, UserCopies, UserRepeatMode, jobid++);
             // Move status to LOADING if Meteor has hardware connected - refresh the display 
             // immediately because sending the print data to Meteor in PreLoadPrintJob.Start
             // can take a significant amount of time for a large image
-            if (latestPrinterStatus == PRINTER_STATUS.IDLE)
+            if (latestPrinterStatus == PrinterStatus.IDLE)
             {
-                textBoxStatus.Text = PRINTER_STATUS.LOADING.ToString();
+                textBoxStatus.Text = PrinterStatus.LOADING.ToString();
                 bJobStarting = true;
                 textBoxStatus.Refresh();
             }
+
             Cursor.Current = Cursors.WaitCursor;
             eRET rVal = test.Start();
             Cursor.Current = Cursors.Default;
+
             if (rVal != eRET.RVAL_OK)
             {
                 string Err = string.Format("Failed to start print job\n\n{0}", rVal);
                 MessageBox.Show(Err, Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 textBoxStatus.Text = latestPrinterStatus.ToString();
             }
+
             EnableControls();
         }
 
@@ -157,11 +162,11 @@ namespace Ttp.Meteor.MeteorMonoPrint
         /// </summary>
         private void EnableControls()
         {
-            bool JobInProgress = latestPrinterStatus == PRINTER_STATUS.READY ||
-                                 latestPrinterStatus == PRINTER_STATUS.PRINTING ||
+            bool JobInProgress = latestPrinterStatus == PrinterStatus.READY ||
+                                 latestPrinterStatus == PrinterStatus.PRINTING ||
                                  bJobStarting;
             bool ImageLoaded = image != null;
-            bool Connected = (latestPrinterStatus != PRINTER_STATUS.DISCONNECTED);
+            bool Connected = (latestPrinterStatus != PrinterStatus.DISCONNECTED);
 
             groupBoxControl.Enabled = Connected;
             groupBoxTemperatures.Enabled = Connected;
@@ -259,7 +264,7 @@ namespace Ttp.Meteor.MeteorMonoPrint
             // Update display status and refresh, as the abort can take a few seconds
             buttonStopPrint.Enabled = false;
             buttonStopPrint.Refresh();
-            textBoxStatus.Text = PRINTER_STATUS.ABORTING.ToString();
+            textBoxStatus.Text = PrinterStatus.ABORTING.ToString();
             textBoxStatus.Refresh();
             // Send the abort command to Meteor.  This will halt any in-progress
             // print, and clear out all print buffers
@@ -305,10 +310,10 @@ namespace Ttp.Meteor.MeteorMonoPrint
         {
             // Get the Meteor status / open a connection to Meteor if one doesn't 
             // already exist
-            PRINTER_STATUS Status = status.GetStatus();
-            if (Status == PRINTER_STATUS.READY ||
-                Status == PRINTER_STATUS.PRINTING ||
-                Status == PRINTER_STATUS.DISCONNECTED)
+            PrinterStatus Status = status.GetStatus();
+            if (Status == PrinterStatus.READY ||
+                Status == PrinterStatus.PRINTING ||
+                Status == PrinterStatus.DISCONNECTED)
             {
                 bJobStarting = false;
             }
@@ -369,11 +374,11 @@ namespace Ttp.Meteor.MeteorMonoPrint
             // Update the status text
             if (bJobStarting)
             {
-                textBoxStatus.Text = PRINTER_STATUS.LOADING.ToString();
+                textBoxStatus.Text = PrinterStatus.LOADING.ToString();
             }
             else if (bJobAborting)
             {
-                textBoxStatus.Text = PRINTER_STATUS.ABORTING.ToString();
+                textBoxStatus.Text = PrinterStatus.ABORTING.ToString();
             }
             else
             {
@@ -414,7 +419,7 @@ namespace Ttp.Meteor.MeteorMonoPrint
                 numericUpDownYTop.Value = Properties.Settings.Default.YTop;
                 numericUpDownFrequency.Value = Properties.Settings.Default.PrintFrequency;
                 numericUpDownCopies.Value = Properties.Settings.Default.Copies;
-                UserRepeatMode = (REPEAT_MODE)Properties.Settings.Default.RepeatMode;
+                UserRepeatMode = (RepeatMode)Properties.Settings.Default.RepeatMode;
                 UserBitsPerPixel = Properties.Settings.Default.PrintResolution;
                 numericUpDownHeadTemperatureSetPoint.Value = Properties.Settings.Default.HeadTemperature;
                 checkBoxHeadTemperatureControl.Checked = Properties.Settings.Default.HeadTemperatureEnabled;
@@ -459,6 +464,7 @@ namespace Ttp.Meteor.MeteorMonoPrint
                 }
             }
         }
+
         private bool UserExternalEncoder
         {
             get
@@ -471,6 +477,7 @@ namespace Ttp.Meteor.MeteorMonoPrint
                 radioButtonExternalEncoder.Checked = value;
             }
         }
+
         private int UserYTop
         {
             get
@@ -478,6 +485,7 @@ namespace Ttp.Meteor.MeteorMonoPrint
                 return (int)(numericUpDownYTop.Value);
             }
         }
+
         private int UserCopies
         {
             get
@@ -485,18 +493,20 @@ namespace Ttp.Meteor.MeteorMonoPrint
                 return (int)numericUpDownCopies.Value;
             }
         }
-        private REPEAT_MODE UserRepeatMode
+
+        private RepeatMode UserRepeatMode
         {
             get
             {
-                return radioButtonSeamless.Checked ? REPEAT_MODE.SEAMLESS : REPEAT_MODE.DISCRETE;
+                return radioButtonSeamless.Checked ? RepeatMode.SEAMLESS : RepeatMode.DISCRETE;
             }
             set
             {
-                radioButtonSeamless.Checked = (value == REPEAT_MODE.SEAMLESS);
-                radioButtonDiscrete.Checked = (value == REPEAT_MODE.DISCRETE);
+                radioButtonSeamless.Checked = (value == RepeatMode.SEAMLESS);
+                radioButtonDiscrete.Checked = (value == RepeatMode.DISCRETE);
             }
         }
+
         private int UserBitsPerPixel
         {
             get
@@ -536,6 +546,7 @@ namespace Ttp.Meteor.MeteorMonoPrint
                 }
             }
         }
+
         private int UserHeadTemperature
         {
             get
@@ -543,6 +554,7 @@ namespace Ttp.Meteor.MeteorMonoPrint
                 return checkBoxHeadTemperatureControl.Checked ? (int)(numericUpDownHeadTemperatureSetPoint.Value * 10) : 0;
             }
         }
+
         private int UserAuxTemperature
         {
             get
@@ -550,6 +562,7 @@ namespace Ttp.Meteor.MeteorMonoPrint
                 return checkBoxAuxTemperatureControl.Checked ? (int)(numericUpDownAuxTemperatureSetPoint.Value * 10) : 0;
             }
         }
+
         #endregion
 
         // -- Handlers for user control interaction --
@@ -564,12 +577,56 @@ namespace Ttp.Meteor.MeteorMonoPrint
 
         private void buttonStartPrint_Click(object sender, EventArgs e)
         {
-            StartPrintJob();
+            var imp = new ImpresionControlador();
+
+            Cursor.Current = Cursors.WaitCursor;
+
+            try
+            {
+                // Move status to LOADING if Meteor has hardware connected - refresh the display 
+                // immediately because sending the print data to Meteor in PreLoadPrintJob.Start
+                // can take a significant amount of time for a large image
+                if (latestPrinterStatus == PrinterStatus.IDLE)
+                {
+                    textBoxStatus.Text = PrinterStatus.LOADING.ToString();
+                    bJobStarting = true;
+                    textBoxStatus.Refresh();
+                }
+
+                var trabajo = new Trabajo(UserBitsPerPixel, UserYTop, UserCopies, "", UserRepeatMode);
+
+                imp.ImprimirTrabajo(UserPrintClock, trabajo);
+            }
+            catch (Exception ex)
+            {
+                Cursor.Current = Cursors.Default;
+                //Volver a condiciones previas 
+                MessageBox.Show(ex.Message);
+            }
+            finally
+            {
+                Cursor.Current = Cursors.Default;
+            }
+
+            //StartPrintJob();
         }
 
         private void buttonStopPrint_Click(object sender, EventArgs e)
         {
-            AbortPrintJob();
+            var imp = new ImpresionControlador();
+
+            // No longer starting a job
+            bJobStarting = false;
+            bJobAborting = true;
+            // Update display status and refresh, as the abort can take a few seconds
+            buttonStopPrint.Enabled = false;
+            buttonStopPrint.Refresh();
+            textBoxStatus.Text = PrinterStatus.ABORTING.ToString();
+            textBoxStatus.Refresh();
+            Cursor.Current = Cursors.WaitCursor;
+            imp.AbortarImpresion();
+            Cursor.Current = Cursors.Default;
+            //AbortPrintJob();
         }
 
         private void FormMeteorMonoPrint_FormClosing(object sender, FormClosingEventArgs e)
